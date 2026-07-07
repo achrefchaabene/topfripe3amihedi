@@ -1,9 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { Edit3, LogOut, PackagePlus, Plus, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { BrandLogo } from "@/components/brand-logo";
+import { apiUrl } from "@/lib/config";
 import { adminLogin, adminRequest, getCategories, getProducts } from "@/lib/api";
 import { categories as fallbackCategories, type Category, type Product } from "@/lib/products";
 
@@ -41,9 +42,10 @@ const emptyProduct: ProductForm = {
 
 export function AdminPanel() {
   const [token, setToken] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@topfripe.com");
+  const [password, setPassword] = useState("TopFripe2026!");
   const [message, setMessage] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categoryName, setCategoryName] = useState("");
@@ -79,6 +81,7 @@ export function AdminPanel() {
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
+    setIsLoggingIn(true);
 
     try {
       const result = await adminLogin(email, password);
@@ -87,6 +90,8 @@ export function AdminPanel() {
       setMessage("Connexion admin reussie.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Connexion impossible");
+    } finally {
+      setIsLoggingIn(false);
     }
   }
 
@@ -219,18 +224,27 @@ export function AdminPanel() {
           className="mx-auto mt-16 max-w-md rounded-lg border border-ink/10 bg-white p-6 shadow-soft"
         >
           <a href="/" className="text-sm font-semibold text-moss">Retour boutique</a>
-          <div className="relative mt-5 h-16 w-48 overflow-hidden rounded-md bg-cream">
-            <Image src="/topfripe-logo.png" alt="TopFripe" fill priority sizes="192px" className="object-cover" />
+          <div className="mt-6 rounded-lg bg-ink p-5">
+            <BrandLogo size="lg" />
           </div>
           <h1 className="mt-5 text-3xl font-semibold">Admin TopFripe</h1>
           <p className="mt-2 text-sm text-ink/60">
             Connecte-toi pour gerer les categories et les produits.
           </p>
+          {!apiUrl ? (
+            <p className="mt-4 rounded-lg bg-clay/10 p-3 text-sm text-clay">
+              API backend non configuree. Ajoute NEXT_PUBLIC_API_URL sur Vercel avec l'URL Render.
+            </p>
+          ) : null}
           <Input label="Email admin" value={email} onChange={setEmail} type="email" />
           <Input label="Mot de passe" value={password} onChange={setPassword} type="password" />
           {message ? <p className="mt-4 text-sm text-clay">{message}</p> : null}
-          <button className="mt-5 w-full rounded-lg bg-ink px-4 py-3 font-semibold text-white">
-            Se connecter
+          <button
+            type="submit"
+            disabled={isLoggingIn}
+            className="mt-5 w-full rounded-lg bg-ink px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isLoggingIn ? "Connexion..." : "Se connecter"}
           </button>
         </form>
       </main>
@@ -242,8 +256,8 @@ export function AdminPanel() {
       <div className="mx-auto max-w-7xl">
         <header className="flex flex-col gap-4 border-b border-ink/10 pb-6 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="relative mb-4 h-16 w-48 overflow-hidden rounded-md bg-cream">
-              <Image src="/topfripe-logo.png" alt="TopFripe" fill priority sizes="192px" className="object-cover" />
+            <div className="mb-4 rounded-lg bg-ink p-4">
+              <BrandLogo size="lg" />
             </div>
             <a href="/" className="text-sm font-semibold text-moss">Retour boutique</a>
             <h1 className="mt-2 text-3xl font-semibold">Administration</h1>
