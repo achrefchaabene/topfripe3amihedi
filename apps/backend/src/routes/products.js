@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import { cloudinary } from "../config/cloudinary.js";
+import { adminAuth } from "../middleware/adminAuth.js";
 import { Product } from "../models/Product.js";
 
 const router = express.Router();
@@ -57,18 +58,19 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-router.post("/", upload.array("images", 5), async (req, res, next) => {
+router.post("/", adminAuth, upload.array("images", 5), async (req, res, next) => {
   try {
     const uploadedImages = await Promise.all(
       (req.files ?? []).map((file) => uploadToCloudinary(file.buffer))
     );
+    const bodyImages = normalizeImages(req.body.images);
 
     const product = await Product.create({
       ...req.body,
       price: Number(req.body.price),
       stock: Number(req.body.stock ?? 1),
-      sold: req.body.sold === "true",
-      images: uploadedImages
+      sold: req.body.sold === true || req.body.sold === "true",
+      images: [...bodyImages, ...uploadedImages]
     });
 
     res.status(201).json(product);
@@ -77,9 +79,26 @@ router.post("/", upload.array("images", 5), async (req, res, next) => {
   }
 });
 
-router.patch("/:id", async (req, res, next) => {
+router.patch("/:id", adminAuth, upload.array("images", 5), async (req, res, next) => {
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+    const uploadedImages = await Promise.all(
+      (req.files ?? []).map((file) => uploadToCloudinary(file.buffer))
+    );
+    const bodyImages = normalizeImages(req.body.images);
+    const update = {
+      ...req.body,
+      ...(req.body.price !== undefined ? { price: Number(req.body.price) } : {}),
+      ...(req.body.stock !== undefined ? { stock: Number(req.body.stock) } : {}),
+      ...(req.body.sold !== undefined
+        ? { sold: req.body.sold === true || req.body.sold === "true" }
+        : {})
+    };
+
+    if (bodyImages.length || uploadedImages.length) {
+      update.images = [...bodyImages, ...uploadedImages];
+    }
+
+    const product = await Product.findByIdAndUpdate(req.params.id, update, {
       new: true,
       runValidators: true
     });
@@ -94,7 +113,7 @@ router.patch("/:id", async (req, res, next) => {
   }
 });
 
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", adminAuth, async (req, res, next) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
 
@@ -107,6 +126,21 @@ router.delete("/:id", async (req, res, next) => {
     next(error);
   }
 });
+
+function normalizeImages(images) {
+  if (!images) return [];
+  if (Array.isArray(images)) return images.filter(Boolean);
+
+  try {
+    const parsed = JSON.parse(images);
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [String(images)];
+  } catch {
+    return String(images)
+      .split("\n")
+      .map((image) => image.trim())
+      .filter(Boolean);
+  }
+}
 
 function uploadToCloudinary(buffer) {
   return new Promise((resolve, reject) => {

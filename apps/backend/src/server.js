@@ -2,6 +2,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import { connectDb } from "./config/db.js";
+import { authRouter } from "./routes/auth.js";
+import { categoriesRouter } from "./routes/categories.js";
 import { productsRouter } from "./routes/products.js";
 
 dotenv.config();
@@ -16,6 +18,8 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "topfripe-api" });
 });
 
+app.use("/api/auth", authRouter);
+app.use("/api/categories", categoriesRouter);
 app.use("/api/products", productsRouter);
 
 app.use((error, _req, res, _next) => {

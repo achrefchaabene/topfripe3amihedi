@@ -1,5 +1,6 @@
 export type Product = {
-  id: string;
+  _id?: string;
+  id?: string;
   title: string;
   price: number;
   description: string;
@@ -13,6 +14,14 @@ export type Product = {
   stock: number;
   sold: boolean;
   createdAt: string;
+};
+
+export type Category = {
+  _id?: string;
+  id?: string;
+  name: string;
+  description?: string;
+  order?: number;
 };
 
 export const categories = [

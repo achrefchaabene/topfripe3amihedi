@@ -12,13 +12,17 @@ import {
   ShoppingBag,
   SlidersHorizontal
 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { categories, products } from "@/lib/products";
+import { useEffect, useMemo, useState } from "react";
+import { getCategories, getProducts } from "@/lib/api";
+import { contact, whatsappUrl } from "@/lib/config";
+import {
+  categories as fallbackCategories,
+  products as fallbackProducts,
+  type Product
+} from "@/lib/products";
 
 const sizes = ["Toutes", "Unique", "8 ans", "40", "42", "M", "L"];
 const prices = ["Tous", "0-40", "40-70", "70+"];
-const brands = ["Toutes", ...Array.from(new Set(products.map((product) => product.brand)))];
-const colors = ["Toutes", ...Array.from(new Set(products.map((product) => product.color)))];
 const availability = ["Tous", "Disponible", "Vendu"];
 
 type Filters = {
@@ -42,11 +46,34 @@ const initialFilters: Filters = {
 };
 
 export function Storefront() {
+  const [items, setItems] = useState<Product[]>(fallbackProducts);
+  const [categoryNames, setCategoryNames] = useState<string[]>(fallbackCategories);
   const [filters, setFilters] = useState(initialFilters);
   const [favorites, setFavorites] = useState<string[]>([]);
 
+  useEffect(() => {
+    Promise.allSettled([getProducts(), getCategories()]).then(([productsResult, categoriesResult]) => {
+      if (productsResult.status === "fulfilled" && productsResult.value.length) {
+        setItems(productsResult.value);
+      }
+
+      if (categoriesResult.status === "fulfilled" && categoriesResult.value.length) {
+        setCategoryNames(categoriesResult.value.map((category) => category.name));
+      }
+    });
+  }, []);
+
+  const brands = useMemo(
+    () => ["Toutes", ...Array.from(new Set(items.map((product) => product.brand)))],
+    [items]
+  );
+  const colors = useMemo(
+    () => ["Toutes", ...Array.from(new Set(items.map((product) => product.color)))],
+    [items]
+  );
+
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
+    return items.filter((product) => {
       const matchesQuery = `${product.title} ${product.brand} ${product.description}`
         .toLowerCase()
         .includes(filters.query.toLowerCase());
@@ -77,7 +104,7 @@ export function Storefront() {
         matchesPrice
       );
     });
-  }, [filters]);
+  }, [filters, items]);
 
   const updateFilter = (key: keyof Filters, value: string) => {
     setFilters((current) => ({ ...current, [key]: value }));
@@ -103,6 +130,7 @@ export function Storefront() {
             <a href="#nouveautes" className="hover:text-white">Nouveautes</a>
             <a href="#categories" className="hover:text-white">Categories</a>
             <a href="#contact" className="hover:text-white">Contact</a>
+            <a href="/admin" className="hover:text-white">Admin</a>
           </nav>
           <a
             href="#favoris"
@@ -141,7 +169,7 @@ export function Storefront() {
                 Voir les nouveautes
               </a>
               <a
-                href="https://wa.me/"
+                href={whatsappUrl()}
                 className="inline-flex items-center gap-2 rounded-full border border-white/35 px-5 py-3 font-semibold text-white"
               >
                 <MessageCircle className="size-5" />
@@ -155,7 +183,7 @@ export function Storefront() {
       <section id="categories" className="border-b border-ink/10 bg-cream py-8">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-            {categories.map((category) => (
+            {categoryNames.map((category) => (
               <button
                 key={category}
                 onClick={() => updateFilter("category", category)}
@@ -194,7 +222,7 @@ export function Storefront() {
                 className="w-full rounded-lg border border-ink/15 py-3 pl-10 pr-3 outline-none focus:border-moss"
               />
             </label>
-            <FilterSelect label="Categorie" value={filters.category} values={["Toutes", ...categories]} onChange={(value) => updateFilter("category", value)} />
+            <FilterSelect label="Categorie" value={filters.category} values={["Toutes", ...categoryNames]} onChange={(value) => updateFilter("category", value)} />
             <FilterSelect label="Taille" value={filters.size} values={sizes} onChange={(value) => updateFilter("size", value)} />
             <FilterSelect label="Prix" value={filters.price} values={prices} onChange={(value) => updateFilter("price", value)} />
             <FilterSelect label="Marque" value={filters.brand} values={brands} onChange={(value) => updateFilter("brand", value)} />
@@ -205,7 +233,7 @@ export function Storefront() {
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {filteredProducts.map((product, index) => (
               <motion.article
-                key={product.id}
+                key={product._id ?? product.id}
                 initial={{ opacity: 0, y: 18 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-80px" }}
@@ -221,12 +249,12 @@ export function Storefront() {
                     className="object-cover"
                   />
                   <button
-                    onClick={() => toggleFavorite(product.id)}
+                    onClick={() => toggleFavorite(product._id ?? product.id ?? product.title)}
                     aria-label="Ajouter aux favoris"
                     className="absolute right-3 top-3 grid size-10 place-items-center rounded-full bg-white/90 text-ink shadow-sm"
                   >
                     <Heart
-                      className={`size-5 ${favorites.includes(product.id) ? "fill-clay text-clay" : ""}`}
+                      className={`size-5 ${favorites.includes(product._id ?? product.id ?? product.title) ? "fill-clay text-clay" : ""}`}
                     />
                   </button>
                   <span className={`absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-semibold ${product.sold ? "bg-ink text-white" : "bg-cream text-ink"}`}>
@@ -271,18 +299,18 @@ export function Storefront() {
               sur WhatsApp, Instagram ou Facebook.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <ContactButton icon={<MessageCircle className="size-5" />} label="WhatsApp" href="https://wa.me/" />
-              <ContactButton icon={<Instagram className="size-5" />} label="Instagram" href="https://instagram.com/" />
-              <ContactButton icon={<Facebook className="size-5" />} label="Facebook" href="https://facebook.com/" />
+              <ContactButton icon={<MessageCircle className="size-5" />} label="WhatsApp" href={whatsappUrl()} />
+              <ContactButton icon={<Instagram className="size-5" />} label="Instagram" href={contact.instagramUrl} />
+              <ContactButton icon={<Facebook className="size-5" />} label="Facebook" href={contact.facebookUrl} />
             </div>
           </div>
           <a
-            href="https://maps.google.com"
+            href={contact.mapsUrl}
             className="flex min-h-64 items-center justify-center rounded-lg border border-white/15 bg-white/8 p-8 text-center transition hover:bg-white/12"
           >
             <span>
               <MapPin className="mx-auto mb-3 size-9 text-cream" />
-              Localisation Google Maps
+              {contact.address}
             </span>
           </a>
         </div>

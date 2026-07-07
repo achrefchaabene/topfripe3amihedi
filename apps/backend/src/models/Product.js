@@ -6,11 +6,7 @@ const productSchema = new mongoose.Schema(
     price: { type: Number, required: true, min: 0 },
     description: { type: String, required: true, trim: true },
     brand: { type: String, required: true, trim: true },
-    category: {
-      type: String,
-      required: true,
-      enum: ["Homme", "Femme", "Enfant", "Chaussures", "Vestes", "Jeans", "Accessoires"]
-    },
+    category: { type: String, required: true, trim: true },
     size: { type: String, required: true, trim: true },
     gender: { type: String, required: true, enum: ["Homme", "Femme", "Enfant", "Unisexe"] },
     condition: { type: String, required: true, enum: ["Neuf", "Tres bon", "Bon"] },
@@ -28,5 +24,7 @@ const productSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+productSchema.index({ title: "text", brand: "text", description: "text" });
 
 export const Product = mongoose.model("Product", productSchema);
