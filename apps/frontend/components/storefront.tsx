@@ -121,10 +121,16 @@ export function Storefront() {
       <header className="fixed left-0 right-0 top-0 z-30 border-b border-white/20 bg-ink/80 text-white backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <a href="#home" className="flex items-center gap-2 font-semibold">
-            <span className="grid size-10 place-items-center rounded-full bg-cream text-ink">
-              TF
+            <span className="relative h-12 w-36 overflow-hidden rounded-md bg-cream sm:w-44">
+              <Image
+                src="/topfripe-logo.png"
+                alt="TopFripe"
+                fill
+                priority
+                sizes="176px"
+                className="object-cover"
+              />
             </span>
-            <span>TopFripe</span>
           </a>
           <nav className="hidden items-center gap-6 text-sm text-white/80 md:flex">
             <a href="#nouveautes" className="hover:text-white">Nouveautes</a>

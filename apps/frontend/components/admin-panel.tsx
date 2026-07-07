@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Edit3, LogOut, PackagePlus, Plus, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
@@ -218,6 +219,9 @@ export function AdminPanel() {
           className="mx-auto mt-16 max-w-md rounded-lg border border-ink/10 bg-white p-6 shadow-soft"
         >
           <a href="/" className="text-sm font-semibold text-moss">Retour boutique</a>
+          <div className="relative mt-5 h-16 w-48 overflow-hidden rounded-md bg-cream">
+            <Image src="/topfripe-logo.png" alt="TopFripe" fill priority sizes="192px" className="object-cover" />
+          </div>
           <h1 className="mt-5 text-3xl font-semibold">Admin TopFripe</h1>
           <p className="mt-2 text-sm text-ink/60">
             Connecte-toi pour gerer les categories et les produits.
@@ -238,6 +242,9 @@ export function AdminPanel() {
       <div className="mx-auto max-w-7xl">
         <header className="flex flex-col gap-4 border-b border-ink/10 pb-6 md:flex-row md:items-center md:justify-between">
           <div>
+            <div className="relative mb-4 h-16 w-48 overflow-hidden rounded-md bg-cream">
+              <Image src="/topfripe-logo.png" alt="TopFripe" fill priority sizes="192px" className="object-cover" />
+            </div>
             <a href="/" className="text-sm font-semibold text-moss">Retour boutique</a>
             <h1 className="mt-2 text-3xl font-semibold">Administration</h1>
           </div>
