@@ -21,7 +21,7 @@ export function BrandLogo({ size = "sm" }: { size?: "sm" | "lg" }) {
       </span>
       <span className="leading-none">
         <span className={`block font-semibold text-white ${titleSize}`}>TopFripe</span>
-        <span className={`mt-1 block font-medium text-white/60 ${subtitleSize}`}>Second hand</span>
+        <span className={`mt-1 block font-medium text-white/60 ${subtitleSize}`}>welcome!</span>
       </span>
     </span>
   );
