@@ -18,7 +18,6 @@ import { getCategories, getProducts } from "@/lib/api";
 import { contact, whatsappUrl } from "@/lib/config";
 import {
   categories as fallbackCategories,
-  products as fallbackProducts,
   type Category,
   type Product
 } from "@/lib/products";
@@ -48,7 +47,7 @@ const initialFilters: Filters = {
 };
 
 export function Storefront() {
-  const [items, setItems] = useState<Product[]>(fallbackProducts);
+  const [items, setItems] = useState<Product[]>([]);
   const [categoryItems, setCategoryItems] = useState<Category[]>(
     fallbackCategories.map((name, index) => ({ id: name, name, order: index }))
   );
@@ -57,7 +56,7 @@ export function Storefront() {
 
   useEffect(() => {
     Promise.allSettled([getProducts(), getCategories()]).then(([productsResult, categoriesResult]) => {
-      if (productsResult.status === "fulfilled" && productsResult.value.length) {
+      if (productsResult.status === "fulfilled") {
         setItems(productsResult.value);
       }
 
@@ -248,6 +247,11 @@ export function Storefront() {
           </aside>
 
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {filteredProducts.length === 0 ? (
+              <div className="rounded-lg border border-ink/10 bg-white p-8 text-center text-ink/65 sm:col-span-2 xl:col-span-3">
+                Aucun produit disponible pour le moment.
+              </div>
+            ) : null}
             {filteredProducts.map((product, index) => (
               <motion.article
                 key={product._id ?? product.id}

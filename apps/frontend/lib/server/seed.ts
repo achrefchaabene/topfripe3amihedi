@@ -17,11 +17,15 @@ export async function seedCategoriesIfEmpty() {
 }
 
 export async function seedProductsIfEmpty() {
-  const count = await Product.countDocuments();
+  await cleanupDemoProducts();
+}
 
-  if (count > 0) return;
-
-  await Product.insertMany(
-    fallbackProducts.map(({ id: _id, createdAt: _createdAt, ...product }) => product)
-  );
+export async function cleanupDemoProducts() {
+  await Product.deleteMany({
+    $or: fallbackProducts.map((product) => ({
+      title: product.title,
+      brand: product.brand,
+      "images.0": product.images[0]
+    }))
+  });
 }
