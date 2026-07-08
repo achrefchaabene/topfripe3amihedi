@@ -19,6 +19,7 @@ import { contact, whatsappUrl } from "@/lib/config";
 import {
   categories as fallbackCategories,
   products as fallbackProducts,
+  type Category,
   type Product
 } from "@/lib/products";
 
@@ -48,7 +49,9 @@ const initialFilters: Filters = {
 
 export function Storefront() {
   const [items, setItems] = useState<Product[]>(fallbackProducts);
-  const [categoryNames, setCategoryNames] = useState<string[]>(fallbackCategories);
+  const [categoryItems, setCategoryItems] = useState<Category[]>(
+    fallbackCategories.map((name, index) => ({ id: name, name, order: index }))
+  );
   const [filters, setFilters] = useState(initialFilters);
   const [favorites, setFavorites] = useState<string[]>([]);
 
@@ -59,10 +62,15 @@ export function Storefront() {
       }
 
       if (categoriesResult.status === "fulfilled" && categoriesResult.value.length) {
-        setCategoryNames(categoriesResult.value.map((category) => category.name));
+        setCategoryItems(categoriesResult.value);
       }
     });
   }, []);
+
+  const categoryNames = useMemo(
+    () => categoryItems.map((category) => category.name),
+    [categoryItems]
+  );
 
   const brands = useMemo(
     () => ["Toutes", ...Array.from(new Set(items.map((product) => product.brand)))],
@@ -181,13 +189,24 @@ export function Storefront() {
       <section id="categories" className="border-b border-ink/10 bg-cream py-8">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-            {categoryNames.map((category) => (
+            {categoryItems.map((category) => (
               <button
-                key={category}
-                onClick={() => updateFilter("category", category)}
-                className="rounded-lg border border-ink/10 bg-white px-4 py-4 text-left font-medium shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft"
+                key={category._id ?? category.id ?? category.name}
+                onClick={() => updateFilter("category", category.name)}
+                className="group overflow-hidden rounded-lg border border-ink/10 bg-white text-left font-medium shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft"
               >
-                {category}
+                {category.image ? (
+                  <span className="relative block aspect-[4/3] bg-cream">
+                    <Image
+                      src={category.image}
+                      alt={category.name}
+                      fill
+                      sizes="(min-width: 1024px) 14vw, 50vw"
+                      className="object-cover transition duration-300 group-hover:scale-105"
+                    />
+                  </span>
+                ) : null}
+                <span className="block px-4 py-4">{category.name}</span>
               </button>
             ))}
           </div>

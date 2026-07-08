@@ -50,9 +50,12 @@ export function AdminPanel() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categoryName, setCategoryName] = useState("");
   const [categoryDescription, setCategoryDescription] = useState("");
+  const [categoryImage, setCategoryImage] = useState("");
+  const [categoryFile, setCategoryFile] = useState<File | null>(null);
   const [categoryOrder, setCategoryOrder] = useState("0");
   const [editingCategoryId, setEditingCategoryId] = useState("");
   const [productForm, setProductForm] = useState<ProductForm>(emptyProduct);
+  const [productFiles, setProductFiles] = useState<FileList | null>(null);
 
   const categoryNames = useMemo(() => {
     const apiCategories = categories.map((category) => category.name);
@@ -104,22 +107,23 @@ export function AdminPanel() {
     event.preventDefault();
     setMessage("");
 
-    const payload = {
-      name: categoryName,
-      description: categoryDescription,
-      order: Number(categoryOrder)
-    };
+    const payload = new FormData();
+    payload.set("name", categoryName);
+    payload.set("description", categoryDescription);
+    payload.set("image", categoryImage);
+    payload.set("order", categoryOrder);
+    if (categoryFile) payload.set("imageFile", categoryFile);
 
     try {
       if (editingCategoryId) {
         await adminRequest(`/categories/${editingCategoryId}`, token, {
           method: "PATCH",
-          body: JSON.stringify(payload)
+          body: payload
         });
       } else {
         await adminRequest("/categories", token, {
           method: "POST",
-          body: JSON.stringify(payload)
+          body: payload
         });
       }
 
@@ -140,6 +144,8 @@ export function AdminPanel() {
     setEditingCategoryId(category._id ?? "");
     setCategoryName(category.name);
     setCategoryDescription(category.description ?? "");
+    setCategoryImage(category.image ?? "");
+    setCategoryFile(null);
     setCategoryOrder(String(category.order ?? 0));
   }
 
@@ -147,6 +153,8 @@ export function AdminPanel() {
     setEditingCategoryId("");
     setCategoryName("");
     setCategoryDescription("");
+    setCategoryImage("");
+    setCategoryFile(null);
     setCategoryOrder("0");
   }
 
@@ -154,38 +162,36 @@ export function AdminPanel() {
     event.preventDefault();
     setMessage("");
 
-    const payload = {
-      title: productForm.title,
-      price: Number(productForm.price),
-      description: productForm.description,
-      brand: productForm.brand,
-      category: productForm.category,
-      size: productForm.size,
-      gender: productForm.gender,
-      condition: productForm.condition,
-      color: productForm.color,
-      images: productForm.images
-        .split("\n")
-        .map((image) => image.trim())
-        .filter(Boolean),
-      stock: Number(productForm.stock),
-      sold: productForm.sold
-    };
+    const payload = new FormData();
+    payload.set("title", productForm.title);
+    payload.set("price", productForm.price);
+    payload.set("description", productForm.description);
+    payload.set("brand", productForm.brand);
+    payload.set("category", productForm.category);
+    payload.set("size", productForm.size);
+    payload.set("gender", productForm.gender);
+    payload.set("condition", productForm.condition);
+    payload.set("color", productForm.color);
+    payload.set("imageUrls", productForm.images);
+    payload.set("stock", productForm.stock);
+    payload.set("sold", String(productForm.sold));
+    Array.from(productFiles ?? []).forEach((file) => payload.append("imageFiles", file));
 
     try {
       if (productForm.id) {
         await adminRequest(`/products/${productForm.id}`, token, {
           method: "PATCH",
-          body: JSON.stringify(payload)
+          body: payload
         });
       } else {
         await adminRequest("/products", token, {
           method: "POST",
-          body: JSON.stringify(payload)
+          body: payload
         });
       }
 
       setProductForm(emptyProduct);
+      setProductFiles(null);
       await loadData();
       setMessage("Produit enregistre.");
     } catch (error) {
@@ -214,6 +220,7 @@ export function AdminPanel() {
       stock: String(product.stock),
       sold: product.sold
     });
+    setProductFiles(null);
   }
 
   if (!token) {
@@ -281,6 +288,16 @@ export function AdminPanel() {
             </h2>
             <Input label="Nom" value={categoryName} onChange={setCategoryName} />
             <Input label="Description" value={categoryDescription} onChange={setCategoryDescription} />
+            <Input label="Image URL" value={categoryImage} onChange={setCategoryImage} />
+            <label className="mt-4 block text-sm font-medium">
+              Upload image categorie
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => setCategoryFile(event.target.files?.[0] ?? null)}
+                className="mt-2 w-full rounded-lg border border-ink/15 px-3 py-3 outline-none focus:border-moss"
+              />
+            </label>
             <Input label="Ordre" value={categoryOrder} onChange={setCategoryOrder} type="number" />
             <div className="mt-4 flex gap-2">
               <button className="rounded-lg bg-ink px-4 py-3 font-semibold text-white">
@@ -293,7 +310,16 @@ export function AdminPanel() {
             <div className="mt-5 space-y-2">
               {categories.map((category) => (
                 <div key={category._id} className="flex items-center justify-between rounded-lg bg-cream p-3">
-                  <span className="font-medium">{category.name}</span>
+                  <span className="flex items-center gap-3 font-medium">
+                    {category.image ? (
+                      <img
+                        src={category.image}
+                        alt={category.name}
+                        className="size-10 rounded-md object-cover"
+                      />
+                    ) : null}
+                    {category.name}
+                  </span>
                   <div className="flex gap-2">
                     <IconButton label="Modifier categorie" onClick={() => editCategory(category)} icon={<Edit3 className="size-4" />} />
                     <IconButton label="Supprimer categorie" onClick={() => deleteCategory(category._id ?? "")} icon={<Trash2 className="size-4" />} />
@@ -335,11 +361,21 @@ export function AdminPanel() {
                 />
               </label>
               <label className="md:col-span-2 text-sm font-medium">
-                Images, une URL par ligne, 2 a 5 photos
+                Images URL, une URL par ligne, 2 a 5 photos
                 <textarea
                   value={productForm.images}
                   onChange={(event) => setProductForm({ ...productForm, images: event.target.value })}
                   className="mt-2 min-h-28 w-full rounded-lg border border-ink/15 px-3 py-3 outline-none focus:border-moss"
+                />
+              </label>
+              <label className="md:col-span-2 text-sm font-medium">
+                Upload photos produit
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(event) => setProductFiles(event.target.files)}
+                  className="mt-2 w-full rounded-lg border border-ink/15 px-3 py-3 outline-none focus:border-moss"
                 />
               </label>
               <div className="md:col-span-2 flex flex-wrap gap-2">
@@ -357,6 +393,7 @@ export function AdminPanel() {
                 <thead className="border-b border-ink/10 text-ink/60">
                   <tr>
                     <th className="py-3">Produit</th>
+                    <th>Image</th>
                     <th>Prix</th>
                     <th>Categorie</th>
                     <th>Stock</th>
@@ -368,6 +405,15 @@ export function AdminPanel() {
                   {products.map((product) => (
                     <tr key={product._id ?? product.id} className="border-b border-ink/8">
                       <td className="py-3 font-medium">{product.title}</td>
+                      <td>
+                        {product.images[0] ? (
+                          <img
+                            src={product.images[0]}
+                            alt={product.title}
+                            className="size-12 rounded-md object-cover"
+                          />
+                        ) : null}
+                      </td>
                       <td>{product.price} TND</td>
                       <td>{product.category}</td>
                       <td>{product.stock}</td>

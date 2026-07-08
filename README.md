@@ -61,4 +61,18 @@ NEXT_PUBLIC_MAPS_URL=https://maps.google.com
 NEXT_PUBLIC_SHOP_ADDRESS=Adresse de la boutique
 ```
 
+Comme l'admin utilise aussi les routes API Vercel, ajouter ces variables sur Vercel:
+
+```env
+MONGODB_URI=mongodb+srv://USER:PASSWORD@HOST/topfripe?retryWrites=true&w=majority
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+ADMIN_EMAIL=admin@topfripe.com
+ADMIN_PASSWORD=TopFripe2026!
+ADMIN_TOKEN=topfripe-admin-secret-2026-change-moi
+```
+
+L'admin accepte les uploads image pour les produits et les categories. Les images sont stockees sur Cloudinary.
+
 Important: ne pas mettre les vraies cles Cloudinary ou MongoDB dans Git. Si elles ont ete partagees publiquement, il vaut mieux les regenerer.
